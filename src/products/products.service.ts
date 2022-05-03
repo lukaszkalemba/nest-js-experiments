@@ -1,38 +1,41 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { UpdateProductDto } from './dtos/update-product.dto';
-
-let products = [
-  { id: 1, title: 'Mleko', price: 3.5 },
-  { id: 2, title: 'Mąka', price: 2.9 },
-];
+import { Product } from './product.entity';
 
 @Injectable()
 export class ProductsService {
+  constructor(@InjectRepository(Product) private repo: Repository<Product>) {}
+
   getProducts() {
-    return products;
+    return this.repo.find();
   }
 
-  getProduct(id: number) {
-    return products.find((product) => product.id === id);
-  }
-
-  addProduct(body: CreateProductDto) {
-    const product = { id: products.length + 1, ...body };
-    products.push(product);
+  async getProduct(id: number) {
+    const product = await this.repo.findOne({ where: { id } });
 
     return product;
   }
 
-  removeProduct(id: number) {
-    products = products.filter((product) => product.id === id);
+  async addProduct(body: CreateProductDto) {
+    const product = this.repo.create(body);
+
+    return await this.repo.save(product);
   }
 
-  updateProduct(id: number, body: UpdateProductDto) {
-    const product = products.find((product) => product.id === id);
+  async removeProduct(id: number) {
+    const product = await this.repo.findOne({ where: { id } });
+
+    this.repo.remove(product);
+  }
+
+  async updateProduct(id: number, body: UpdateProductDto) {
+    const product = await this.repo.findOne({ where: { id } });
 
     Object.assign(product, body);
 
-    return product;
+    return await this.repo.save(product);
   }
 }
